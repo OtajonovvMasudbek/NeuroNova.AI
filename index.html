@@ -32,6 +32,17 @@
       background: #00c6ff;
       border-radius: 9999px;
     }
+
+    .copy-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background-color: #00c6ff;
+      color: white;
+      padding: 8px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
   </style>
 </head>
 
@@ -74,7 +85,7 @@
       // Bot javobi
       const botMsg = document.createElement("div");
       botMsg.className =
-        "self-start bg-gradient-to-br from-[#1c1b2f] to-[#2b2a4c] border border-white/10 text-white rounded-2xl px-4 py-3 max-w-[80%] shadow-md leading-relaxed whitespace-pre-wrap text-sm sm:text-base";
+        "self-start bg-gradient-to-br from-[#1c1b2f] to-[#2b2a4c] border border-white/10 text-white rounded-2xl px-4 py-3 max-w-[80%] shadow-md leading-relaxed whitespace-pre-wrap text-sm sm:text-base animate-fade-in";
       chatBox.appendChild(botMsg);
   
       promptInput.value = "";
@@ -87,7 +98,7 @@
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }],
+              contents: [{ parts: [{ text: prompt }] }], 
             }),
           }
         );
@@ -99,51 +110,59 @@
         botMsg.textContent = "❌ Xatolik: " + error.message;
       }
     }
-  
+
     function typeText(text, element) {
       let i = 0;
-      let isBold = false;
-      let isCode = false;
+      let buffer = "";
+  
+      const cleanText = (text) => {
+        const urlPattern = /https?:\/\/[^\s]+/g;
+        text = text.replace(urlPattern, (url) => `<a href="${url}" target="_blank" class="text-blue-400 underline hover:text-blue-300 transition">${url}</a>`);
+        text = text.replace(/([*#_`~^><|\\{}()\[\]]+)/g, "");
+        return text;
+      };
+
+      const flushBuffer = () => {
+        if (buffer) {
+          element.innerHTML += cleanText(buffer); 
+          buffer = "";
+        }
+      };
   
       const interval = setInterval(() => {
-        // Matnning boshiga emoji qo‘shish
-        if (i === 0) {
-          element.innerHTML += "<span class='text-xl mr-2'></span>";
-        }
-  
-        if (text.slice(i, i + 3) === "```") {
-          if (!isCode) {
-            element.innerHTML += "<pre class='bg-black/30 rounded p-3 my-2 text-white text-sm overflow-auto'>";
-            isCode = true;
-          } else {
-            element.innerHTML += "</pre>";
-            isCode = false;
-          }
-          i += 3;
-          return;
-        }
-  
-        if (text.slice(i, i + 2) === "**") {
-          if (!isBold) {
-            element.innerHTML += "<strong>";
-            isBold = true;
-          } else {
-            element.innerHTML += "</strong>";
-            isBold = false;
-          }
-          i += 2;
-          return;
-        }
-  
-        element.innerHTML += text.charAt(i);
+        buffer += text.charAt(i);
         i++;
+
+        if (i >= text.length) {
+          flushBuffer();
+          clearInterval(interval);
+        }
   
-        if (i >= text.length) clearInterval(interval);
         element.scrollIntoView({ behavior: "smooth", block: "end" });
       }, 15);
     }
+
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        alert("Kod nusxalandi!");
+      }).catch((err) => {
+        alert("Xatolik: " + err);
+      });
+    }
+
+    function createCodeBlock(code) {
+      const pre = document.createElement('pre');
+      pre.className = "bg-black/30 rounded p-3 my-2 text-white text-sm overflow-auto";
+      pre.textContent = code;
+      const copyButton = document.createElement('button');
+      copyButton.textContent = "Nusxalash";
+      copyButton.className = "copy-btn";
+      copyButton.onclick = () => copyToClipboard(code);
+      pre.appendChild(copyButton);
+      return pre;
+    }
+
   </script>
-  
 </body>
 
 </html>
